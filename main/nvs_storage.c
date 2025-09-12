@@ -1,7 +1,7 @@
 #include "nvs_storage.h"
 #include "nvs_flash.h"
 #include "esp_log.h"
-#include "string.h"
+#include <string.h>
 static const char *TAG = "NVS";
 
 esp_err_t nvs_init(void) {
@@ -44,6 +44,8 @@ esp_err_t nvs_save_wifi_credentials(const char *ssid, const char *password) {
         goto cleanup;
     }
 
+cleanup:
+
     /* commit to nvs */
     err = nvs_commit(nvs_handle);
     if (err != ESP_OK) {
@@ -52,14 +54,12 @@ esp_err_t nvs_save_wifi_credentials(const char *ssid, const char *password) {
         ESP_LOGI(TAG, "Wi-Fi credentials saved: SSID=%s", ssid);
     }
 
-cleanup:
     /* close opened storage */
     nvs_close(nvs_handle);
     return err;
 }
 
-esp_err_t nvs_load_wifi_credentials(char *ssid, size_t ssid_len, char *password, size_t pass_len) {
-
+esp_err_t nvs_load_wifi_credentials(char *ssid, size_t *ssid_len, char *password, size_t *pass_len) {
     nvs_handle_t nvs_handle;
     /* open storage */
     esp_err_t err = nvs_open("storage", NVS_READONLY, &nvs_handle);
@@ -68,29 +68,41 @@ esp_err_t nvs_load_wifi_credentials(char *ssid, size_t ssid_len, char *password,
         return err;
     }
 
-    /* get wifi ssid */
-    err = nvs_get_str(nvs_handle,"wifi_ssid", ssid, &ssid_len);
-    if (err != ESP_ERR_NVS_NOT_FOUND) {
+    // Get wifi ssid
+    size_t temp_ssid_len = *ssid_len;  // Use temp to avoid overwrite
+    err = nvs_get_str(nvs_handle, "wifi_ssid", ssid, &temp_ssid_len);
+    if (err == ESP_OK) {
+        *ssid_len = temp_ssid_len;
+        ESP_LOGI(TAG, "SSID loaded: %s (length %d)", ssid, *ssid_len);
+    } else if (err == ESP_ERR_NVS_NOT_FOUND) {
         ssid[0] = '\0';
-    } else if (err != ESP_OK) {
+        *ssid_len = 0;
+        ESP_LOGW(TAG, "SSID not found in NVS");
+    } else {
         ESP_LOGE(TAG, "Failed to load SSID: %s", esp_err_to_name(err));
         nvs_close(nvs_handle);
         return err;
     }
 
-    /* get wifi pass */
-    err = nvs_get_str(nvs_handle, "wifi_pass", password, &pass_len);
-    if (err == ESP_ERR_NVS_NOT_FOUND) {
+    // Get wifi pass
+    size_t temp_pass_len = *pass_len;
+    err = nvs_get_str(nvs_handle, "wifi_pass", password, &temp_pass_len);
+    if (err == ESP_OK) {
+        *pass_len = temp_pass_len;
+        ESP_LOGI(TAG, "Password loaded (length %d)", *pass_len);  // Hide content for security
+    } else if (err == ESP_ERR_NVS_NOT_FOUND) {
         password[0] = '\0';
-    } else if (err != ESP_OK) {
+        *pass_len = 0;
+        ESP_LOGW(TAG, "Password not found in NVS");
+    } else {
         ESP_LOGE(TAG, "Failed to load password: %s", esp_err_to_name(err));
         nvs_close(nvs_handle);
         return err;
     }
 
     /* close the storage */
-    ESP_LOGI(TAG, "Wi-Fi credentials loaded: SSID=%s",ssid);
     nvs_close(nvs_handle);
+    ESP_LOGI(TAG, "Wi-Fi credentials loaded: SSID length=%d", *ssid_len);
     return ESP_OK;
 }
 
