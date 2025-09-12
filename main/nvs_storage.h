@@ -18,8 +18,7 @@ esp_err_t nvs_init(void);
 esp_err_t nvs_save_wifi_credentials(const char *ssid, const char *password);
 
 // Load Wi-Fi credentials
-esp_err_t nvs_load_wifi_credentials(char *ssid, size_t ssid_len, char *password, size_t pass_len);
-
+esp_err_t nvs_load_wifi_credentials(char *ssid, size_t *ssid_len, char *password, size_t *pass_len);
 // Save profiles 
 esp_err_t nvs_save_profile(uint8_t profile_id, const led_profile_t *profile);
 
