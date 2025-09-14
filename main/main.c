@@ -3,6 +3,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"  // For portTICK_PERIOD_MS
 #include "freertos/task.h"      // For vTaskDelay
+#include "ble_prov.h"
 static const char *TAG = "MAIN";
 
 void app_main(void) {
@@ -28,6 +29,9 @@ void app_main(void) {
     }
 
     ESP_LOGI(TAG, "Wi-Fi and NTP sync complete");
+
+    ESP_ERROR_CHECK(ble_prov_init());
+    
     while (1) {
         vTaskDelay(10000 / portTICK_PERIOD_MS);  // Main loop (add RTC sync later)
     }

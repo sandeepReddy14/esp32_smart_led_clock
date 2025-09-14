@@ -4,4 +4,4 @@ sdkconfig.old
 *.tmp
 *.bak
 dependencies.lock
-./vscode/settings.json
+.vscode/settings.json
